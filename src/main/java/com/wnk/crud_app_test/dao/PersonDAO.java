@@ -1,11 +1,14 @@
 package com.wnk.crud_app_test.dao;
 
 import com.wnk.crud_app_test.models.Person;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -14,12 +17,19 @@ import java.util.Optional;
 
 @Component
 public class PersonDAO {
-    private final JdbcTemplate jdbcTemplate;
+    private final SessionFactory sessionFactory;
+
+    @Autowired
+    public PersonDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
+    /*private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public PersonDAO(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-    }
+    }*/
 
 
     /*private static int PEOPLE_COUNT;
@@ -44,7 +54,7 @@ public class PersonDAO {
         }
     }*/
 
-
+    @Transactional(readOnly = true)
     public List<Person> index() {
         //return people;
         /*List<Person> people = new ArrayList<>();
@@ -69,14 +79,21 @@ public class PersonDAO {
 
         /*return jdbcTemplate.query("SELECT * FROM Person", new PersonMapper());*/
 
+/*
         return jdbcTemplate.query("SELECT * FROM Person", new BeanPropertyRowMapper<>(Person.class));
+*/
+        Session session = sessionFactory.getCurrentSession();
+        return session.createQuery("select p from Person p", Person.class)
+                .getResultList();
     }
 
-    public Optional<Person> show(String email) {
-        return jdbcTemplate.query("SELECT * FROM Person WHERE email=?", new Object[] {email},
-                new BeanPropertyRowMapper<>(Person.class)).stream().findAny();
-    }
+    /*public Optional<Person> show(String email) {
+        *//*return jdbcTemplate.query("SELECT * FROM Person WHERE email=?", new Object[] {email},
+                new BeanPropertyRowMapper<>(Person.class)).stream().findAny();*//*
+        return null;
+    }*/
 
+    @Transactional(readOnly = true)
     public Person show(int id) {
         //return people.stream().filter(person -> person.getId() == id).findAny().orElse(null);
 
@@ -103,10 +120,13 @@ public class PersonDAO {
         /*return jdbcTemplate.query("SELECT * FROM Person WHERE id=?", new Object[]{id}, new PersonMapper())
                 .stream().findAny().orElse(null);*/
 
-        return jdbcTemplate.query("SELECT * FROM Person WHERE id=?", new Object[]{id}, new BeanPropertyRowMapper<>(Person.class))
-                .stream().findAny().orElse(null);
+        /*return jdbcTemplate.query("SELECT * FROM Person WHERE id=?", new Object[]{id}, new BeanPropertyRowMapper<>(Person.class))
+                .stream().findAny().orElse(null);*/
+        Session session = sessionFactory.getCurrentSession();
+        return session.get(Person.class, id);
     }
 
+    @Transactional
     public void save(Person person) {
         /*person.setId(++PEOPLE_COUNT);
         people.add(person);*/
@@ -123,10 +143,13 @@ public class PersonDAO {
             throw new RuntimeException(e);
         }*/
 
-        jdbcTemplate.update("INSERT INTO Person(name, age, email, address) VALUES (?, ?, ?, ?)",
-                person.getName(), person.getAge(), person.getEmail(), person.getAddress());
+        /*jdbcTemplate.update("INSERT INTO Person(name, age, email, address) VALUES (?, ?, ?, ?)",
+                person.getName(), person.getAge(), person.getEmail(), person.getAddress());*/
+        Session session = sessionFactory.getCurrentSession();
+        session.save(person);
     }
 
+    @Transactional
     public void update(Person updatedPerson, int id) {
         /*Person personToBeUpdated = show(id);
         personToBeUpdated.setName(updatedPerson.getName());
@@ -147,10 +170,16 @@ public class PersonDAO {
             throw new RuntimeException(e);
         }*/
 
-        jdbcTemplate.update("UPDATE Person SET name=?, age=?, email=?, address=?, WHERE id=?",
-                updatedPerson.getName(), updatedPerson.getAge(), updatedPerson.getEmail(), updatedPerson.getAddress(), id);
+        /*jdbcTemplate.update("UPDATE Person SET name=?, age=?, email=?, address=?, WHERE id=?",
+                updatedPerson.getName(), updatedPerson.getAge(), updatedPerson.getEmail(), updatedPerson.getAddress(), id);*/
+        Session session = sessionFactory.getCurrentSession();
+        Person personToBeUpdated = session.get(Person.class, id);
+        personToBeUpdated.setName(updatedPerson.getName());
+        personToBeUpdated.setAge(updatedPerson.getAge());
+        personToBeUpdated.setEmail(updatedPerson.getEmail());
     }
 
+    @Transactional
     public void delete(int id) {
         //people.removeIf(person -> person.getId() == id);
 
@@ -164,7 +193,9 @@ public class PersonDAO {
             throw new RuntimeException(e);
         }*/
 
-        jdbcTemplate.update("DELETE FROM Person WHERE id=?", id);
+        /*jdbcTemplate.update("DELETE FROM Person WHERE id=?", id);*/
+        Session session = sessionFactory.getCurrentSession();
+        session.remove(session.get(Person.class, id));
     }
 
 
@@ -173,7 +204,7 @@ public class PersonDAO {
     /////////////////////////
 
 
-    public void testMultipleUpdate() {
+/*    public void testMultipleUpdate() {
         List<Person> people = create1000people();
 
         long before = System.currentTimeMillis();
@@ -186,9 +217,9 @@ public class PersonDAO {
         long after = System.currentTimeMillis();
         System.out.println("Time with multiple: " + (after - before));
 
-    }
+    }*/
 
-    public void testBatchUpdate() {
+    /*public void testBatchUpdate() {
         List<Person> people = create1000people();
 
         long before = System.currentTimeMillis();
@@ -220,5 +251,5 @@ public class PersonDAO {
             people.add(new Person(i, "Name_" + i, 30, "name_" + i + "@gmail.com", "some address"));
         }
         return people;
-    }
+    }*/
 }
